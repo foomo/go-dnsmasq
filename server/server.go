@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/go-systemd/activation"
+	// "github.com/coreos/go-systemd/activation"
 	"github.com/foomo/go-dnsmasq/cache"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
@@ -62,41 +62,41 @@ func (s *server) Run() error {
 	}
 
 	if s.config.Systemd {
-		packetConns, err := activation.PacketConns()
-		if err != nil {
-			return err
-		}
-		listeners, err := activation.Listeners()
-		if err != nil {
-			return err
-		}
-		if len(packetConns) == 0 && len(listeners) == 0 {
-			return fmt.Errorf("No UDP or TCP sockets supplied by systemd")
-		}
-		for _, p := range packetConns {
-			if u, ok := p.(*net.UDPConn); ok {
-				s.group.Add(1)
-				go func() {
-					defer s.group.Done()
-					if err := dns.ActivateAndServe(nil, u, mux); err != nil {
-						log.Fatalf("%s", err)
-					}
-				}()
-				dnsReadyMsg(u.LocalAddr().String(), "udp")
-			}
-		}
-		for _, l := range listeners {
-			if t, ok := l.(*net.TCPListener); ok {
-				s.group.Add(1)
-				go func() {
-					defer s.group.Done()
-					if err := dns.ActivateAndServe(t, nil, mux); err != nil {
-						log.Fatalf("%s", err)
-					}
-				}()
-				dnsReadyMsg(t.Addr().String(), "tcp")
-			}
-		}
+		// packetConns, err := activation.PacketConns()
+		// if err != nil {
+		// 	return err
+		// }
+		// listeners, err := activation.Listeners()
+		// if err != nil {
+		// 	return err
+		// }
+		// if len(packetConns) == 0 && len(listeners) == 0 {
+		// 	return fmt.Errorf("No UDP or TCP sockets supplied by systemd")
+		// }
+		// for _, p := range packetConns {
+		// 	if u, ok := p.(*net.UDPConn); ok {
+		// 		s.group.Add(1)
+		// 		go func() {
+		// 			defer s.group.Done()
+		// 			if err := dns.ActivateAndServe(nil, u, mux); err != nil {
+		// 				log.Fatalf("%s", err)
+		// 			}
+		// 		}()
+		// 		dnsReadyMsg(u.LocalAddr().String(), "udp")
+		// 	}
+		// }
+		// for _, l := range listeners {
+		// 	if t, ok := l.(*net.TCPListener); ok {
+		// 		s.group.Add(1)
+		// 		go func() {
+		// 			defer s.group.Done()
+		// 			if err := dns.ActivateAndServe(t, nil, mux); err != nil {
+		// 				log.Fatalf("%s", err)
+		// 			}
+		// 		}()
+		// 		dnsReadyMsg(t.Addr().String(), "tcp")
+		// 	}
+		// }
 	} else {
 		s.group.Add(1)
 		go func() {
@@ -236,6 +236,9 @@ func (s *server) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 
 	// Check hosts records before forwarding the query
 	if q.Qtype == dns.TypeA || q.Qtype == dns.TypeAAAA || q.Qtype == dns.TypeANY {
+
+		fmt.Println("query name:", name)
+
 		records, err := s.AddressRecords(q, name)
 		if err != nil {
 			log.Errorf("Error looking up hostsfile records: %s", err)
@@ -243,6 +246,16 @@ func (s *server) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 		if len(records) > 0 {
 			log.Debugf("[%d] Found name in hostsfile records", req.Id)
 			m.Answer = append(m.Answer, records...)
+			if name == "slow-dns.de." {
+				delay := 5 * time.Millisecond
+				fmt.Println("SLEEPING for", delay, func(records []dns.RR) (res []string) {
+					for _, r := range records {
+						res = append(res, r.String())
+					}
+					return
+				}(records))
+				time.Sleep(delay)
+			}
 			return
 		}
 	}

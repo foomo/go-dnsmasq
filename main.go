@@ -6,7 +6,6 @@ package main // import "github.com/foomo/go-dnsmasq"
 
 import (
 	"fmt"
-	"log/syslog"
 	"net"
 	"os"
 	"os/signal"
@@ -19,7 +18,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
-	logrus_syslog "github.com/sirupsen/logrus/hooks/syslog"
 
 	hosts "github.com/foomo/go-dnsmasq/hostsfile"
 	"github.com/foomo/go-dnsmasq/resolvconf"
@@ -184,13 +182,13 @@ func main() {
 		}
 
 		if c.Bool("syslog") {
-			log.SetFormatter(&log.TextFormatter{DisableTimestamp: true, DisableColors: true})
-			hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_DAEMON|syslog.LOG_INFO, "go-dnsmasq")
-			if err != nil {
-				log.Error("Unable to connect to local syslog daemon")
-			} else {
-				log.AddHook(hook)
-			}
+			// log.SetFormatter(&log.TextFormatter{DisableTimestamp: true, DisableColors: true})
+			// hook, err := syslog.NewSyslogHook("", "", syslog.LOG_DAEMON|syslog.LOG_INFO, "go-dnsmasq")
+			// if err != nil {
+			// 	log.Error("Unable to connect to local syslog daemon")
+			// } else {
+			// 	log.AddHook(hook)
+			// }
 		} else {
 			log.SetFormatter(&log.TextFormatter{})
 		}
